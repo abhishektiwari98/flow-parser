@@ -4,9 +4,8 @@ import csv
 from collections import defaultdict
 
 def load_lookup_table(filepath):
-
     lookup_dict = {}
-    with open(filepath, mode='r') as file:
+    with open(filepath, 'r') as file:
         reader = csv.DictReader(file)
         for row in reader:
             dstport = int(row['dstport'])
@@ -16,44 +15,43 @@ def load_lookup_table(filepath):
     return lookup_dict
 
 def process_flow_logs(flow_logs_file, lookup_dict):
-
     tag_counts = defaultdict(int)
     port_protocol_counts = defaultdict(int)
 
-    with open(flow_logs_file, mode='r') as file:
+    with open(flow_logs_file, 'r') as file:
         for line in file:
             fields = line.split()
             if len(fields) >= 7:
-                dstport = int(fields[5])  # Destination port is 6th field
-                protocol_num = int(fields[6])  # Protocol number is 7th field
+                dstport = int(fields[5])  # Destination port
+                protocol_num = int(fields[6])  # Protocol number
 
-                # Converting protocol number to a string representation
+                # Map protocol number to string
                 protocol = 'tcp' if protocol_num == 6 else 'udp' if protocol_num == 17 else 'unknown'
                 
                 key = (dstport, protocol)
                 
-                # Countinfg port/protocol combinations
+                # Count port/protocol combinations
                 port_protocol_counts[key] += 1
                 
-                # Determining the tag
+                # Determineing the tag
                 tag = lookup_dict.get(key, 'Untagged')
                 tag_counts[tag] += 1
     
     return tag_counts, port_protocol_counts
 
 def write_combined_output(tag_counts, port_protocol_counts, output_file):
-    with open(output_file, mode='w', newline='') as file:
+    with open(output_file, 'w', newline='') as file:
         writer = csv.writer(file)
         
-        # Writing tag counts
+        # Write tag countss
         writer.writerow(['Tag Counts'])
         writer.writerow(['Tag', 'Count'])
         for tag, count in sorted(tag_counts.items()):
             writer.writerow([tag, count])
         
-        writer.writerow([])  # Blank line to separate sections
+        writer.writerow([])  # Separate sections
         
-        # Writing Port/Protocol combination counts
+        # Write port/protocol combination counts
         writer.writerow(['Port/Protocol Combination Counts'])
         writer.writerow(['Port', 'Protocol', 'Count'])
         for (port, protocol), count in sorted(port_protocol_counts.items()):
